@@ -7,8 +7,8 @@ export function Navbar() {
                 </div>
             </a>
             <div className="flex items-center space-x-10 text-white text-xl">
-                <div className="cursor-pointer hover:text-blue-500">Produtor de Eventos</div>
-                <div className="cursor-pointer hover:text-blue-500">Meu Painel</div>
+                <a href="/login" className="cursor-pointer hover:text-blue-500">Produtor de Eventos</a>
+                <a href="/login" className="cursor-pointer hover:text-blue-500">Meu Painel</a>
             </div>
         </div>
     )
