@@ -1,8 +1,10 @@
+import { Link } from "react-router-dom";
+
 // Um pequeno componente de logo estilizado para o topo da tela
-const KoynLogo = () => (
+const KoymLogo = () => (
     <div className="flex items-center text-5xl font-bold">
         <span className="text-white">Ko</span>
-        <span className="text-sky-400">yn</span>
+        <span className="text-sky-400">ym</span>
     </div>
 );
 
@@ -17,15 +19,12 @@ export function Login() {
 
                 {/* Conteúdo do formulário */}
                 <div className="flex flex-col items-center gap-8 z-10 relative">
-                    <KoynLogo />
+                    <KoymLogo />
 
                     <div className="text-center">
                         <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">
                             ENTRE NA <span className="text-sky-400">SUA CONTA</span>
                         </h1>
-                        <p className="text-slate-300 text-base max-w-70 mx-auto">
-                            Acesse seus ingressos exclusivos e eventos globais com NFT.
-                        </p>
                     </div>
 
                     <form className="w-full flex flex-col gap-6">
@@ -60,7 +59,8 @@ export function Login() {
 
                         <button
                             type="submit"
-                            className="w-full bg-[#0d59f7] hover:bg-[#0047e0] text-white font-bold py-4 rounded-xl text-lg transition duration-150"
+                            className="w-full bg-[#0d59f7] hover:bg-[#0047e0] text-white font-bold py-4 rounded-xl text-lg transition duration-150 cursor-pointer"
+                            onClick={(e => alert('Clique no Login'))}
                         >
                             LOGIN NA CONTA
                         </button>
@@ -68,11 +68,12 @@ export function Login() {
 
                     <div className="text-center w-full mt-4 flex flex-col items-center gap-4">
                         <span className="text-slate-400">Não tem uma conta?</span>
-                        <button
+                        <Link
+                            to={'/cadastro/cliente'}
                             className="w-full border-2 border-slate-600 hover:border-slate-500 text-sky-400 font-semibold py-3 rounded-xl text-base transition duration-150"
                         >
                             CRIAR NOVA CONTA
-                        </button>
+                        </Link>
                     </div>
 
                 </div>
