@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 export function RegisterClient() {
     // Mantemos o estado plano para facilitar a manipulação dos inputs
@@ -19,6 +20,7 @@ export function RegisterClient() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -54,6 +56,7 @@ export function RegisterClient() {
             const response = await api.post('/auth/register-cliente', payload);
             console.log('Cliente criado com sucesso:', response.data);
             alert('Conta criada com sucesso!');
+            navigate('/login')
 
         } catch (error: any) {
             console.error('Erro na integração:', error);
@@ -65,6 +68,7 @@ export function RegisterClient() {
         } finally {
             setIsLoading(false);
         }
+
     };
 
     return (

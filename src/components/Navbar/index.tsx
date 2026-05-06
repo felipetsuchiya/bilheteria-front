@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { api } from '../../services/api'; // Não se esqueça de importar a API!
 
 export function Navbar() {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -25,15 +26,26 @@ export function Navbar() {
         };
     }, []);
 
-    const handleLogout = () => {
-        localStorage.removeItem('@NFTix:token');
-        localStorage.removeItem('@NFTix:usuario');
-        setIsDropdownOpen(false);
+    // 3. Atualizamos o handleLogout para fazer a requisição na API
+    const handleLogout = async () => {
+        try {
+            // Se a sua blueprint 'auth_bp' tiver um prefixo '/auth', a rota será '/auth/logout'
+            // Caso contrário, ajuste apenas para '/logout'
+            await api.post('/auth/logout');
+            console.log('Logout realizado no backend com sucesso.');
+        } catch (error) {
+            console.error('Erro ao comunicar logout ao backend:', error);
+        } finally {
+            // O finally garante que, mesmo se a API falhar, o usuário será deslogado no frontend
+            localStorage.removeItem('@NFTix:token');
+            localStorage.removeItem('@NFTix:usuario');
+            setIsDropdownOpen(false);
 
-        // Dispara o aviso para a Navbar saber que o usuário saiu
-        window.dispatchEvent(new Event('authChange'));
+            // Dispara o aviso para a Navbar saber que o usuário saiu
+            window.dispatchEvent(new Event('authChange'));
 
-        navigate('/login');
+            navigate('/login');
+        }
     };
 
     const initial = user?.nome ? user.nome.charAt(0).toUpperCase() : 'U';
@@ -58,7 +70,7 @@ export function Navbar() {
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="flex items-center gap-3 hover:bg-[#16274a] p-2 rounded-xl transition-colors focus:outline-none"
                             >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 to-purple-600 flex items-center justify-center font-bold shadow-md">
+                                <div className="w-10 h-10 rounded-full bg-linear-to-tr from-sky-500 to-purple-600 flex items-center justify-center font-bold shadow-md">
                                     {initial}
                                 </div>
                                 <div className="text-left hidden sm:block">

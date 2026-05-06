@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 export function RegisterOrganization() {
     // Estado unificado para os dados do Admin e da Organização
@@ -15,6 +16,7 @@ export function RegisterOrganization() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -50,6 +52,7 @@ export function RegisterOrganization() {
 
             console.log('Organização registrada com sucesso:', response.data);
             alert('Conta de organização criada com sucesso!');
+            navigate('/login')
 
         } catch (error: any) {
             console.error('Erro ao integrar com a API Flask:', error);
