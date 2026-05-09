@@ -11,7 +11,7 @@ export function Navbar() {
     // 2. Usamos o useEffect para carregar o usuário e escutar o evento de login/logout
     useEffect(() => {
         const loadUser = () => {
-            const userStr = localStorage.getItem('@NFTix:usuario');
+            const userStr = localStorage.getItem('@App:usuario');
             setUser(userStr ? JSON.parse(userStr) : null);
         };
 
@@ -37,8 +37,8 @@ export function Navbar() {
             console.error('Erro ao comunicar logout ao backend:', error);
         } finally {
             // O finally garante que, mesmo se a API falhar, o usuário será deslogado no frontend
-            localStorage.removeItem('@NFTix:token');
-            localStorage.removeItem('@NFTix:usuario');
+            localStorage.removeItem('@App:token');
+            localStorage.removeItem('@App:usuario');
             setIsDropdownOpen(false);
 
             // Dispara o aviso para a Navbar saber que o usuário saiu

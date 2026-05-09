@@ -6,7 +6,9 @@ import { RegisterClient } from '../pages/Register/RegisterClient';
 import { RegisterOrganization } from '../pages/Register/RegisterOrganization';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
-import { Dashboard } from '../pages/Dashboard';
+import { Dashboard } from '../pages/DashboardOrg';
+import { CreateEvent } from '../pages/ManageEvents/CreateEvent';
+import { EditEvent } from '../pages/ManageEvents/EditEvent';
 
 export function AppRoutes() {
   return (
@@ -20,6 +22,8 @@ export function AppRoutes() {
         <Route path="/cadastro/cliente" element={<RegisterClient />} />
         <Route path="/cadastro/organizacao" element={<RegisterOrganization />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/evento/novo" element={<CreateEvent />} />
+        <Route path="/evento/editar/:id" element={<EditEvent />} />
       </Routes>
 
       <Footer />

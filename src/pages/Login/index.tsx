@@ -2,12 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 
-const NFTixLogo = () => (
-    <div className="flex items-center gap-2 text-2xl font-bold">
-        <span className="text-white">N</span>
-        <span className="text-sky-400">FTix</span>
-    </div>
-);
 
 export function Login() {
     const navigate = useNavigate();
@@ -28,21 +22,16 @@ export function Login() {
                 senha
             });
 
-            // 1. Salva o token que veio na raiz do JSON
             const { token, usuario } = response.data;
 
             if (token) {
-                // Salva no LocalStorage
-                localStorage.setItem('@NFTix:token', token);
-                localStorage.setItem('@NFTix:usuario', JSON.stringify(usuario));
+                localStorage.setItem('@App:token', token);
+                localStorage.setItem('@App:usuario', JSON.stringify(usuario));
 
-                // ---> ADICIONE ESTA LINHA AQUI <---
                 // Dispara o evento avisando a Navbar que os dados mudaram
                 window.dispatchEvent(new Event('authChange'));
             }
 
-            // 2. Redirecionamento baseado no campo 'tipo' dentro de 'usuario'
-            // O payload retorna "cliente" ou "organizacao"
             if (usuario.tipo === 'organizacao') {
                 navigate('/dashboard');
             } else if (usuario.tipo === 'cliente') {
@@ -72,7 +61,10 @@ export function Login() {
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-900/30 rounded-full blur-xl opacity-70"></div>
 
                 <div className="flex flex-col items-center gap-8 z-10 relative">
-                    <NFTixLogo />
+                    <div className="flex items-center text-2xl font-bold">
+                        <span className="text-white">Ko</span>
+                        <span className="text-sky-400">ym</span>
+                    </div>
 
                     <div className="text-center">
                         <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">
