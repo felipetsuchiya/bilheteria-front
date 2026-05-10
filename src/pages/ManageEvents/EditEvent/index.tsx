@@ -8,9 +8,9 @@ export function EditEvent() {
 
     const [eventData, setEventData] = useState({
         nome: '',
-        descricao: '',
+        descricao_evento: '',
         data_evento: '',
-        localizacao: '',
+        local_evento: '',
         preco_eth: '',
         quantidade_ingressos: ''
     });
@@ -35,7 +35,26 @@ export function EditEvent() {
     const loadEventDetails = async () => {
         try {
             const response = await api.get(`/api/eventos/${id}`);
-            setEventData(response.data);
+            const data = response.data;
+
+            // 1. Converte a data GMT do backend para o formato que o <input> aceita (YYYY-MM-DDTHH:MM)
+            let dataFormatadaParaInput = '';
+            if (data.data_hora) {
+                const dateObj = new Date(data.data_hora);
+                // toISOString() gera "2026-06-15T00:00:00.000Z", o slice(0, 16) pega só até os minutos
+                dataFormatadaParaInput = dateObj.toISOString().slice(0, 16);
+            }
+
+            // 2. Mapeamos manualmente para garantir que os nomes batam e o preco_eth fique vazio
+            setEventData({
+                nome: data.nome || '',
+                descricao_evento: data.descricao_evento || '',
+                data_evento: dataFormatadaParaInput,
+                local_evento: data.local_evento || '',
+                preco_eth: '', // Mantemos vazio conforme solicitado
+                quantidade_ingressos: data.quantidade_ingressos || ''
+            });
+
         } catch (error) {
             setErrorMessage('Erro ao carregar detalhes do evento.');
         }
@@ -52,16 +71,30 @@ export function EditEvent() {
         setErrorMessage('');
 
         try {
+            // 3. Formata a data de volta para o formato SQL que o backend exige no PUT
+            let dataHoraFormatada = '';
+            if (eventData.data_evento) {
+                const [datePart, timePart] = eventData.data_evento.split('T');
+                const timeWithSeconds = timePart.length === 5 ? `${timePart}:00` : timePart;
+                dataHoraFormatada = `${datePart} ${timeWithSeconds}`;
+            }
+
+            // 4. Monta o payload blindado (sem enviar o preco_eth)
             const payload = {
-                ...eventData,
-                quantidade_ingressos: Number(eventData.quantidade_ingressos)
+                nome: eventData.nome,
+                quantidade_ingressos: Number(eventData.quantidade_ingressos),
+                data_hora: dataHoraFormatada,
+                local_evento: eventData.local_evento,
+                descricao_evento: eventData.descricao_evento
             };
 
             await api.put(`/api/eventos/${id}`, payload);
             alert('Evento atualizado com sucesso!');
             navigate('/dashboard');
         } catch (error: any) {
-            setErrorMessage(error.response?.data?.mensagem || 'Erro ao alterar evento.');
+            console.error("Erro completo:", error.response?.data);
+            const msgErro = error.response?.data?.mensagem || error.response?.data?.erro || 'Erro ao alterar evento.';
+            setErrorMessage(msgErro);
         } finally {
             setIsLoading(false);
         }
@@ -70,7 +103,7 @@ export function EditEvent() {
     const handleDelete = async () => {
         if (window.confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.')) {
             try {
-                await api.delete(`/eventos/${id}`);
+                await api.delete(`/api/eventos/${id}`); // Ajustei a rota para ter o /api/
                 alert('Evento excluído!');
                 navigate('/dashboard');
             } catch (error) {
@@ -120,8 +153,8 @@ export function EditEvent() {
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700">Descrição do Evento</label>
                             <textarea
-                                name="descricao"
-                                value={eventData.descricao}
+                                name="descricao_evento" // Ajustado o name aqui
+                                value={eventData.descricao_evento}
                                 onChange={handleChange}
                                 required
                                 rows={4}
@@ -145,8 +178,8 @@ export function EditEvent() {
                                 <label className="text-sm font-bold text-slate-700">Localização / Link</label>
                                 <input
                                     type="text"
-                                    name="localizacao"
-                                    value={eventData.localizacao}
+                                    name="local_evento"
+                                    value={eventData.local_evento}
                                     onChange={handleChange}
                                     required
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-sky-500 outline-none"
@@ -163,7 +196,6 @@ export function EditEvent() {
                                     name="preco_eth"
                                     value={eventData.preco_eth}
                                     onChange={handleChange}
-                                    required
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-sky-500 outline-none"
                                 />
                             </div>

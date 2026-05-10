@@ -7,10 +7,10 @@ export function CreateEvent() {
     const [user, setUser] = useState<any>(null);
 
     const [eventData, setEventData] = useState({
-        nome: '', 
+        nome: '',
         descricao: '',
         data_evento: '',
-        localizacao: '',
+        local_evento: '',
         preco_eth: '',
         quantidade_ingressos: ''
     });
@@ -43,11 +43,26 @@ export function CreateEvent() {
         setErrorMessage('');
 
         try {
-            // Montando o payload com o id da organização do usuário logado
+            // 1. Formatação blindada para o formato SQL que o backend espera no POST
+            let dataHoraFormatada = '';
+            if (eventData.data_evento) {
+                // Divide "2026-06-15T00:00" em Data e Hora
+                const [datePart, timePart] = eventData.data_evento.split('T');
+                
+                // Se a hora vier só com "HH:MM", adicionamos os segundos ":00"
+                const timeWithSeconds = timePart.length === 5 ? `${timePart}:00` : timePart;
+                
+                // Junta tudo no formato esperado: "YYYY-MM-DD HH:MM:SS"
+                dataHoraFormatada = `${datePart} ${timeWithSeconds}`;
+            }
+
+            // 2. Monta o payload EXATAMENTE igual ao seu Postman (sem preco_eth e id_organizacao)
             const payload = {
-                ...eventData,
+                nome: eventData.nome,
                 quantidade_ingressos: Number(eventData.quantidade_ingressos),
-                id_organizacao: user?.id 
+                data_hora: dataHoraFormatada,
+                local_evento: eventData.local_evento,
+                descricao_evento: eventData.descricao
             };
 
             await api.post('/api/eventos', payload);
@@ -55,7 +70,9 @@ export function CreateEvent() {
             navigate('/dashboard');
 
         } catch (error: any) {
-            setErrorMessage(error.response?.data?.mensagem || 'Erro ao salvar evento.');
+            console.error("Erro completo:", error.response?.data);
+            const msgErro = error.response?.data?.mensagem || error.response?.data?.erro || 'Erro ao salvar evento.';
+            setErrorMessage(msgErro);
         } finally {
             setIsLoading(false);
         }
@@ -129,8 +146,8 @@ export function CreateEvent() {
                                 <label className="text-sm font-bold text-slate-700">Localização / Link</label>
                                 <input
                                     type="text"
-                                    name="localizacao"
-                                    value={eventData.localizacao}
+                                    name="local_evento"
+                                    value={eventData.local_evento}
                                     onChange={handleChange}
                                     required
                                     placeholder="Endereço físico ou URL"
