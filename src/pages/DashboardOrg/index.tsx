@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 
@@ -31,6 +31,8 @@ export function Dashboard() {
             const response = await api.get('/api/eventos', {
                 params: { id_usuario: currentUser.id }
             });
+
+            console.log(response.data)
 
             const meusEventos = response.data.filter(
                 (evento: any) => evento.id_usuario === currentUser.id

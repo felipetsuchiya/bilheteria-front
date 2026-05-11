@@ -9,6 +9,7 @@ import { Footer } from '../components/Footer';
 import { Dashboard } from '../pages/DashboardOrg';
 import { CreateEvent } from '../pages/ManageEvents/CreateEvent';
 import { EditEvent } from '../pages/ManageEvents/EditEvent';
+import { Checkout } from '../pages/Checkout';
 
 export function AppRoutes() {
   return (
@@ -17,13 +18,14 @@ export function AppRoutes() {
 
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/detalhes" element={<EventDetails />} />
+        <Route path="/detalhes/:id" element={<EventDetails />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro/cliente" element={<RegisterClient />} />
         <Route path="/cadastro/organizacao" element={<RegisterOrganization />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/evento/novo" element={<CreateEvent />} />
         <Route path="/evento/editar/:id" element={<EditEvent />} />
+        <Route path="/checkout" element={<Checkout />} />
       </Routes>
 
       <Footer />

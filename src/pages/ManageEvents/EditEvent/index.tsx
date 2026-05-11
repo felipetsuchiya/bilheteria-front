@@ -103,7 +103,7 @@ export function EditEvent() {
     const handleDelete = async () => {
         if (window.confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.')) {
             try {
-                await api.delete(`/api/eventos/${id}`); // Ajustei a rota para ter o /api/
+                await api.delete(`/api/eventos/${id}`);
                 alert('Evento excluído!');
                 navigate('/dashboard');
             } catch (error) {
