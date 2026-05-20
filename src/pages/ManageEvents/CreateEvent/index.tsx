@@ -4,7 +4,7 @@ import { api } from '../../../services/api';
 
 export function CreateEvent() {
     const navigate = useNavigate();
-    const [user, setUser] = useState<any>(null);
+    const [, setUser] = useState<any>(null);
 
     const [eventData, setEventData] = useState({
         nome: '',
@@ -56,14 +56,24 @@ export function CreateEvent() {
                 dataHoraFormatada = `${datePart} ${timeWithSeconds}`;
             }
 
-            // 2. Monta o payload EXATAMENTE igual ao seu Postman (sem preco_eth e id_organizacao)
-            const payload = {
+            // Converte ETH → wei (string para preservar precisão)
+            const ticketPriceWei = eventData.preco_eth
+                ? String(Math.round(parseFloat(eventData.preco_eth) * 1e18))
+                : undefined;
+
+            const payload: any = {
                 nome: eventData.nome,
                 quantidade_ingressos: Number(eventData.quantidade_ingressos),
                 data_hora: dataHoraFormatada,
                 local_evento: eventData.local_evento,
-                descricao_evento: eventData.descricao
+                descricao_evento: eventData.descricao,
             };
+
+            if (ticketPriceWei) {
+                payload.ticket_price_wei = ticketPriceWei;
+                payload.max_resale_price_wei = 0;
+                payload.royalty_bps = 1000; // 10%
+            }
 
             await api.post('/api/eventos', payload);
             alert('Evento criado com sucesso!');
@@ -71,7 +81,11 @@ export function CreateEvent() {
 
         } catch (error: any) {
             console.error("Erro completo:", error.response?.data);
-            const msgErro = error.response?.data?.mensagem || error.response?.data?.erro || 'Erro ao salvar evento.';
+            const msgErro = error.response?.data?.mensagem
+                || error.response?.data?.erro
+                || (error.code === 'ECONNABORTED' ? 'Timeout — backend demorou demais.' : null)
+                || (!error.response ? 'Sem resposta do servidor. Backend está rodando?' : null)
+                || `Erro ${error.response?.status}: Erro ao salvar evento.`;
             setErrorMessage(msgErro);
         } finally {
             setIsLoading(false);

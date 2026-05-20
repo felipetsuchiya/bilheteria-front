@@ -10,8 +10,7 @@ export function RegisterOrganization() {
         emailAdmin: '',
         senhaAdmin: '',
         nomeOrg: '',
-        cnpjOrg: '',
-        acessoEthereumOrg: ''
+        cnpjOrg: ''
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +41,7 @@ export function RegisterOrganization() {
             organizacao: {
                 nome: formData.nomeOrg,
                 cnpj: formData.cnpjOrg,
-                acesso_ethereum: formData.acessoEthereumOrg
+                carteira_ethereum: ''
             }
         };
 
@@ -117,18 +116,6 @@ export function RegisterOrganization() {
                                         onChange={handleChange}
                                         required
                                         placeholder="00.000.000/0001-00"
-                                        className="w-full bg-[#16274a] border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-sky-500 outline-none"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-slate-300">Acesso Ethereum (Carteira)</label>
-                                    <input
-                                        type="text"
-                                        name="acessoEthereumOrg"
-                                        value={formData.acessoEthereumOrg}
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="0x..."
                                         className="w-full bg-[#16274a] border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-sky-500 outline-none"
                                     />
                                 </div>

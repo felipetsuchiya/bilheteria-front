@@ -10,6 +10,7 @@ import { Dashboard } from '../pages/DashboardOrg';
 import { CreateEvent } from '../pages/ManageEvents/CreateEvent';
 import { EditEvent } from '../pages/ManageEvents/EditEvent';
 import { Checkout } from '../pages/Checkout';
+import { MeusIngressos } from '../pages/MeusIngressos';
 
 export function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ export function AppRoutes() {
         <Route path="/evento/novo" element={<CreateEvent />} />
         <Route path="/evento/editar/:id" element={<EditEvent />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/minha-conta" element={<MeusIngressos />} />
       </Routes>
 
       <Footer />
