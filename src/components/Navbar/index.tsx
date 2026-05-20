@@ -41,12 +41,13 @@ export function Navbar() {
 
     const handleConnect = async () => {
         const addr = await connect();
-        if (addr && isCliente) saveWallet(addr);
+        if (addr && (isCliente || isOrganizacao)) saveWallet(addr);
     };
 
     const shortAddr = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
     const initial = user?.nome ? user.nome.charAt(0).toUpperCase() : 'U';
     const isCliente = user?.tipo === 'cliente';
+    const isOrganizacao = user?.tipo === 'organizacao';
 
     return (
         <nav className="bg-[#0c1b35] border-b border-slate-800 text-white py-4 px-6 relative z-50">
@@ -65,8 +66,8 @@ export function Navbar() {
 
                 <div className="flex items-center gap-3">
 
-                    {/* Botão MetaMask — só aparece para cliente logado */}
-                    {user && isCliente && (
+                    {/* Botão MetaMask — aparece para cliente e organização logados */}
+                    {user && (isCliente || isOrganizacao) && (
                         account ? (
                             <div className="hidden sm:flex items-center gap-2 bg-[#16274a] border border-emerald-500/30 px-3 py-1.5 rounded-xl">
                                 <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shrink-0"></span>
@@ -118,7 +119,7 @@ export function Navbar() {
                                 <div className="absolute right-0 mt-3 w-52 bg-[#16274a] rounded-xl shadow-2xl border border-slate-700/50 py-2 overflow-hidden">
 
                                     {/* Wallet no dropdown (mobile) */}
-                                    {isCliente && (
+                                    {(isCliente || isOrganizacao) && (
                                         <div className="px-4 py-2 border-b border-slate-700/50 mb-1">
                                             {account ? (
                                                 <div className="flex items-center gap-2 text-xs text-emerald-400">
