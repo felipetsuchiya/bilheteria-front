@@ -229,7 +229,18 @@ export function MeusIngressos() {
                         </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap">
+                        {qrToken && qrToken !== 'ERRO' && qrSegsRestantes > 0 && (
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(qrToken);
+                                    alert('Token copiado! Cole no campo "QR Token" do Dashboard do organizador.');
+                                }}
+                                className="flex-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors text-sm"
+                            >
+                                📋 Copiar Token
+                            </button>
+                        )}
                         {qrSegsRestantes <= 0 && (
                             <button
                                 onClick={() => handleAbrirQr(qrIngresso)}
