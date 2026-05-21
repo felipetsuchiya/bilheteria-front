@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useMetaMask } from '../../hooks/useMetaMask';
 
 type Ingresso = {
     id: number;
@@ -11,6 +12,7 @@ type Ingresso = {
     tx_hash: string | null;
     carteira_comprador: string | null;
     resale_price_wei: string | null;
+    max_resale_price_wei: string | null;
 };
 
 export function MeusIngressos() {
@@ -18,6 +20,8 @@ export function MeusIngressos() {
     const [ingressos, setIngressos] = useState<Ingresso[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const { listForResale, error: walletError } = useMetaMask();
 
     // Revenda
     const [revendaId, setRevendaId] = useState<number | null>(null);
@@ -47,16 +51,44 @@ export function MeusIngressos() {
             .finally(() => setIsLoading(false));
     };
 
-    const handleAnunciarRevenda = async (ingresso_id: number) => {
+    const handleAnunciarRevenda = async (ingresso: Ingresso) => {
         setRevendaErro('');
         const priceWei = revendaEth ? String(Math.round(parseFloat(revendaEth) * 1e18)) : '';
         if (!priceWei || priceWei === '0') {
             setRevendaErro('Informe um preço válido em ETH.');
             return;
         }
+        if (ingresso.token_id === null) {
+            setRevendaErro('Ingresso sem Token ID — não é possível anunciar revenda.');
+            return;
+        }
+
+        // Valida teto de revenda definido pelo organizador no contrato
+        if (ingresso.max_resale_price_wei && ingresso.max_resale_price_wei !== '0') {
+            const maxWei = BigInt(ingresso.max_resale_price_wei);
+            const reqWei = BigInt(priceWei);
+            if (reqWei > maxWei) {
+                const maxEth = (Number(maxWei) / 1e18).toFixed(4);
+                setRevendaErro(`Preço acima do limite permitido pelo organizador (máx: ${maxEth} ETH).`);
+                return;
+            }
+        }
+
         setRevendaLoading(true);
         try {
-            await api.post(`/api/ingressos/${ingresso_id}/anunciar-revenda`, { price_wei: priceWei });
+            // 1. Assinar listForResale() no contrato via MetaMask (só o dono do NFT pode fazer isso)
+            const result = await listForResale(ingresso.token_id, priceWei);
+            if (!result) {
+                setRevendaErro(walletError ?? 'Transação cancelada ou falhou no MetaMask.');
+                return;
+            }
+
+            // 2. Registrar no backend com o tx_hash da transação on-chain
+            await api.post(`/api/ingressos/${ingresso.id}/anunciar-revenda`, {
+                price_wei: priceWei,
+                tx_hash: result.txHash,
+            });
+
             setRevendaId(null);
             setRevendaEth('');
             setIsLoading(true);
@@ -203,11 +235,11 @@ export function MeusIngressos() {
                                             <span className="text-slate-400 text-sm font-medium">ETH</span>
                                         </div>
                                         <button
-                                            onClick={() => handleAnunciarRevenda(ing.id)}
+                                            onClick={() => handleAnunciarRevenda(ing)}
                                             disabled={revendaLoading}
                                             className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-xl disabled:opacity-50 transition-colors"
                                         >
-                                            {revendaLoading ? 'Anunciando...' : 'Confirmar'}
+                                            {revendaLoading ? 'Aguarde MetaMask...' : 'Confirmar'}
                                         </button>
                                         <button
                                             onClick={() => setRevendaId(null)}

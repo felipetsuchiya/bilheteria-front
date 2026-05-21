@@ -26,7 +26,7 @@ export function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/evento/novo" element={<CreateEvent />} />
         <Route path="/evento/editar/:id" element={<EditEvent />} />
-        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout/:eventoId" element={<Checkout />} />
         <Route path="/minha-conta" element={<MeusIngressos />} />
       </Routes>
 

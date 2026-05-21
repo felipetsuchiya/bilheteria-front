@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useMetaMask } from '../../hooks/useMetaMask';
 
-type MintStatus = 'idle' | 'connecting' | 'minting' | 'saving' | 'success' | 'error';
 type BuyStatus = 'idle' | 'buying' | 'saving' | 'success' | 'error';
 
 type Revenda = {
@@ -15,19 +14,21 @@ type Revenda = {
 
 export function EventDetails() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [event, setEvent] = useState<any>(null);
     const [isFetching, setIsFetching] = useState(true);
 
-    const { account, isConnecting, isMinting, error: walletError, connect, mintTicket, buyResaleTicket } = useMetaMask();
-    const [mintStatus, setMintStatus] = useState<MintStatus>('idle');
-    const [txHash, setTxHash] = useState('');
-    const [tokenId, setTokenId] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
+    const { account, error: walletError, buyResaleTicket } = useMetaMask();
 
     const [revendas, setRevendas] = useState<Revenda[]>([]);
     const [buyStatus, setBuyStatus] = useState<BuyStatus>('idle');
     const [buyingId, setBuyingId] = useState<number | null>(null);
     const [buyError, setBuyError] = useState('');
+
+    // Dados da compra bem-sucedida para tela de sucesso
+    const [successTxHash, setSuccessTxHash] = useState('');
+    const [successTokenId, setSuccessTokenId] = useState<number | null>(null);
+    const [successPriceWei, setSuccessPriceWei] = useState('');
 
     useEffect(() => {
         api.get(`/api/eventos/${id}`)
@@ -48,7 +49,6 @@ export function EventDetails() {
 
     const priceWei: string = event?.ticket_price_wei ?? '0';
     const priceEth: string = priceWei === '0' ? '—' : (Number(priceWei) / 1e18).toFixed(4) + ' ETH';
-    const blockchainEventId: number = event?.blockchain_event_id ?? 0;
 
     const getDia = (d?: string) => d ? new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', timeZone: 'UTC' }) : '--';
     const getMes = (d?: string) => d ? new Date(d).toLocaleDateString('pt-BR', { month: 'short', timeZone: 'UTC' }).replace('.', '').toUpperCase() : '---';
@@ -62,65 +62,13 @@ export function EventDetails() {
     };
     const shortAddr = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
 
-    async function handleComprar() {
-        setErrorMsg('');
-
+    function handleComprar() {
         if (!isLoggedIn) {
-            setErrorMsg('Você precisa estar logado para comprar um ingresso.');
+            alert('Você precisa estar logado para comprar um ingresso.');
             return;
         }
-
-        if (!event?.blockchain_event_id) {
-            setErrorMsg('Este evento ainda não está disponível para compra na blockchain.');
-            return;
-        }
-
-        // 1. Conectar MetaMask
-        if (!account) {
-            setMintStatus('connecting');
-            const addr = await connect();
-            if (!addr) {
-                setMintStatus('error');
-                setErrorMsg(walletError ?? 'Conexão com MetaMask cancelada.');
-                return;
-            }
-        }
-
-        // 2. Mint via MetaMask — NFT vai direto para a wallet do comprador
-        setMintStatus('minting');
-        const result = await mintTicket(
-            blockchainEventId,
-            priceWei,
-            `https://koyn.app/metadata/evento/${event?.id}`,
-        );
-
-        if (!result) {
-            setMintStatus('error');
-            setErrorMsg(walletError ?? 'Transação cancelada ou falhou.');
-            return;
-        }
-
-        // 3. Registrar no backend
-        setMintStatus('saving');
-        try {
-            await api.post('/api/ingressos/registrar-mint', {
-                id_evento: event?.id,
-                token_id: Number(result.tokenId),
-                tx_hash: result.txHash,
-                carteira_comprador: result.buyer,
-            });
-            setTxHash(result.txHash);
-            setTokenId(result.tokenId);
-            setMintStatus('success');
-        } catch {
-            setMintStatus('error');
-            setErrorMsg('NFT mintado! Mas falhou ao salvar no servidor. Guarde o txHash abaixo.');
-            setTxHash(result.txHash);
-            setTokenId(result.tokenId);
-        }
+        navigate(`/checkout/${id}`);
     }
-
-    const isLoading = ['connecting', 'minting', 'saving'].includes(mintStatus) || isConnecting || isMinting;
 
     async function handleComprarRevenda(revenda: Revenda) {
         setBuyError('');
@@ -143,6 +91,9 @@ export function EventDetails() {
                 carteira_comprador: result.buyer,
             });
             setRevendas(prev => prev.filter(r => r.id !== revenda.id));
+            setSuccessTxHash(result.txHash);
+            setSuccessTokenId(revenda.token_id);
+            setSuccessPriceWei(revenda.resale_price_wei);
             setBuyStatus('success');
         } catch {
             setBuyError('Compra registrada na blockchain, mas falhou no servidor. Guarde o txHash.');
@@ -161,6 +112,62 @@ export function EventDetails() {
     if (!event) return (
         <div className="flex justify-center items-center min-h-screen text-slate-500 font-bold text-xl">
             Evento não encontrado.
+        </div>
+    );
+
+    // ── TELA DE SUCESSO APÓS COMPRA DE REVENDA ───────────────────────
+    if (buyStatus === 'success') return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+            <div className="bg-white rounded-3xl shadow-xl border border-green-100 p-10 max-w-md w-full text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h2 className="text-2xl font-extrabold text-[#0c1b35] mb-2">Ingresso Adquirido!</h2>
+                <p className="text-slate-500 mb-6">
+                    Seu ingresso de revenda foi transferido para sua carteira na blockchain Sepolia.
+                </p>
+
+                <div className="bg-slate-50 rounded-xl p-4 text-left space-y-3 mb-6">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Evento</span>
+                        <span className="font-bold text-slate-800 text-right max-w-48 truncate">{event.nome}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Token NFT</span>
+                        <span className="font-mono font-bold text-sky-600">#{successTokenId}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Valor pago</span>
+                        <span className="font-bold text-amber-600">
+                            {successPriceWei ? (Number(successPriceWei) / 1e18).toFixed(4) : '—'} ETH
+                        </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Carteira</span>
+                        <span className="font-mono text-slate-600">{account ? shortAddr(account) : '—'}</span>
+                    </div>
+                    <div className="text-sm">
+                        <span className="text-slate-500 font-medium block mb-1">Transação</span>
+                        <a
+                            href={`https://sepolia.etherscan.io/tx/${successTxHash}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-mono text-sky-600 hover:underline break-all text-xs"
+                        >
+                            {successTxHash}
+                        </a>
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => navigate('/minha-conta')}
+                    className="w-full bg-[#0d59f7] hover:bg-[#0047e0] text-white font-extrabold py-3 rounded-xl transition-colors"
+                >
+                    Ver Meus Ingressos
+                </button>
+            </div>
         </div>
     );
 
@@ -208,37 +215,46 @@ export function EventDetails() {
                         Ingressos em <span className="text-amber-500">Revenda</span>
                     </h2>
                     <div className="flex flex-col gap-3">
-                        {revendas.map(rev => (
-                            <div key={rev.id} className="bg-white border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
-                                <div className="flex flex-col gap-1">
-                                    <span className="font-bold text-[#0c1b35]">Token NFT <span className="font-mono text-sky-600">#{rev.token_id}</span></span>
-                                    <span className="text-amber-600 font-bold text-lg">{(Number(rev.resale_price_wei) / 1e18).toFixed(4)} ETH</span>
-                                    {rev.carteira_vendedor && (
-                                        <span className="text-slate-400 font-mono text-xs">Vendedor: {shortAddr(rev.carteira_vendedor)}</span>
-                                    )}
+                        {revendas.map(rev => {
+                            const isOwner = !!(account && rev.carteira_vendedor &&
+                                account.toLowerCase() === rev.carteira_vendedor.toLowerCase());
+
+                            return (
+                                <div key={rev.id} className="bg-white border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="font-bold text-[#0c1b35]">Token NFT <span className="font-mono text-sky-600">#{rev.token_id}</span></span>
+                                        <span className="text-amber-600 font-bold text-lg">{(Number(rev.resale_price_wei) / 1e18).toFixed(4)} ETH</span>
+                                        {rev.carteira_vendedor && (
+                                            <span className="text-slate-400 font-mono text-xs">
+                                                Vendedor: {shortAddr(rev.carteira_vendedor)}
+                                                {isOwner && <span className="ml-1 text-amber-500 font-semibold">(você)</span>}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <button
+                                            onClick={() => handleComprarRevenda(rev)}
+                                            disabled={buyingId === rev.id || isOwner}
+                                            title={isOwner ? 'Você não pode comprar seu próprio ingresso' : ''}
+                                            className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {buyingId === rev.id
+                                                ? (buyStatus === 'buying' ? 'Aguarde MetaMask...' : 'Salvando...')
+                                                : isOwner ? 'Seu ingresso' : 'Comprar Revenda'}
+                                        </button>
+                                        {isOwner && (
+                                            <p className="text-amber-500 text-xs text-right">
+                                                Conecte outra carteira para comprar
+                                            </p>
+                                        )}
+                                        {buyingId === rev.id && buyError && (
+                                            <p className="text-red-500 text-xs text-right max-w-48">{buyError}</p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex flex-col items-end gap-2">
-                                    <button
-                                        onClick={() => handleComprarRevenda(rev)}
-                                        disabled={buyingId === rev.id}
-                                        className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl transition-colors disabled:opacity-50"
-                                    >
-                                        {buyingId === rev.id
-                                            ? (buyStatus === 'buying' ? 'Aguarde MetaMask...' : 'Salvando...')
-                                            : 'Comprar Revenda'}
-                                    </button>
-                                    {buyingId === rev.id && buyError && (
-                                        <p className="text-red-500 text-xs text-right max-w-48">{buyError}</p>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
-                    {buyStatus === 'success' && (
-                        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-4 text-green-700 text-sm font-medium">
-                            Ingresso de revenda comprado com sucesso! Veja em Meus Ingressos.
-                        </div>
-                    )}
                     {buyError && buyingId === null && (
                         <p className="mt-2 text-red-500 text-sm">{buyError}</p>
                     )}
@@ -251,62 +267,23 @@ export function EventDetails() {
                     Comprar Ingresso NFT
                 </h1>
 
-                {/* Status da wallet */}
-                <div className="mb-4 text-sm">
-                    {account
-                        ? <span className="text-green-600 font-medium flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>MetaMask: {shortAddr(account)}</span>
-                        : <span className="text-slate-400">MetaMask não conectado</span>
-                    }
+                <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-col text-center md:text-left">
+                        <span className="font-bold text-xl text-slate-800">Ingresso Único</span>
+                        <span className="font-medium text-sky-500 mt-1">{priceEth}</span>
+                        <span className="text-xs text-gray-400 mt-1">NFT ERC-721 • Rede Sepolia</span>
+                        {!event.blockchain_event_id && (
+                            <span className="text-xs text-amber-500 mt-1">Venda blockchain não configurada</span>
+                        )}
+                    </div>
+                    <button
+                        onClick={handleComprar}
+                        disabled={!event.blockchain_event_id}
+                        className="px-10 py-4 text-white font-extrabold text-lg bg-[#0d59f7] hover:bg-[#0047e0] rounded-2xl shadow-xl transition-transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                    >
+                        {account ? 'Comprar com MetaMask' : 'Comprar Ingresso'}
+                    </button>
                 </div>
-
-                {mintStatus !== 'success' && (
-                    <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex flex-col text-center md:text-left">
-                            <span className="font-bold text-xl text-slate-800">Ingresso Único</span>
-                            <span className="font-medium text-sky-500 mt-1">{priceEth}</span>
-                            <span className="text-xs text-gray-400 mt-1">NFT ERC-721 • Rede Sepolia</span>
-                            {!event.blockchain_event_id && (
-                                <span className="text-xs text-amber-500 mt-1">Venda blockchain não configurada</span>
-                            )}
-                        </div>
-                        <button
-                            onClick={handleComprar}
-                            disabled={isLoading || !event.blockchain_event_id}
-                            className="px-10 py-4 text-white font-extrabold text-lg bg-[#0d59f7] hover:bg-[#0047e0] rounded-2xl shadow-xl transition-transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                        >
-                            {mintStatus === 'connecting' || isConnecting ? 'Conectando...'
-                                : mintStatus === 'minting' || isMinting ? 'Aguarde MetaMask...'
-                                : mintStatus === 'saving' ? 'Salvando...'
-                                : account ? 'Comprar com MetaMask' : 'Conectar e Comprar'}
-                        </button>
-                    </div>
-                )}
-
-                {/* Erro */}
-                {(mintStatus === 'error') && (
-                    <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
-                        {errorMsg || walletError}
-                        {txHash && <div className="mt-2 text-xs break-all font-mono"><span className="font-bold">TxHash: </span>{txHash}</div>}
-                    </div>
-                )}
-
-                {/* Sucesso */}
-                {mintStatus === 'success' && (
-                    <div className="mt-4 bg-green-50 border border-green-200 rounded-2xl p-6">
-                        <div className="text-green-700 font-bold text-xl mb-3">Ingresso NFT Mintado!</div>
-                        <div className="space-y-2 text-sm">
-                            <div><span className="font-semibold text-gray-600">Token ID: </span><span className="font-mono text-blue-700">#{tokenId}</span></div>
-                            <div><span className="font-semibold text-gray-600">Dono (on-chain): </span><span className="font-mono text-gray-800">{account && shortAddr(account)}</span></div>
-                            <div>
-                                <span className="font-semibold text-gray-600">Transação: </span>
-                                <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer" className="font-mono text-blue-600 hover:underline break-all">
-                                    {txHash.slice(0, 20)}...
-                                </a>
-                            </div>
-                        </div>
-                        <div className="mt-4 text-xs text-gray-400">Seu ingresso está registrado na blockchain Sepolia e no sistema Koyn.</div>
-                    </div>
-                )}
             </div>
         </div>
     );
