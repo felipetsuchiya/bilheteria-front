@@ -133,5 +133,30 @@ export function useMetaMask() {
     }
   }, [account, connect]);
 
-  return { account, isConnecting, isMinting, error, connect, mintTicket, listForResale, buyResaleTicket };
+  const cancelResaleListing = useCallback(async (
+    tokenId: number
+  ): Promise<{ txHash: string } | null> => {
+    setError(null);
+    const addr = account ?? await connect();
+    if (!addr) return null;
+
+    setIsMinting(true);
+    try {
+      const web3 = new Web3(window.ethereum);
+      const contract = new web3.eth.Contract(KOYN_ABI as any, CONTRACT_ADDRESS);
+
+      const receipt = await (contract.methods as any)
+        .cancelResaleListing(tokenId)
+        .send({ from: addr });
+
+      return { txHash: receipt.transactionHash as string };
+    } catch (err: any) {
+      setError(err.message ?? 'Erro ao cancelar listagem de revenda');
+      return null;
+    } finally {
+      setIsMinting(false);
+    }
+  }, [account, connect]);
+
+  return { account, isConnecting, isMinting, error, connect, mintTicket, listForResale, buyResaleTicket, cancelResaleListing };
 }

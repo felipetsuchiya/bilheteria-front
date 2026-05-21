@@ -12,7 +12,9 @@ export function CreateEvent() {
         data_evento: '',
         local_evento: '',
         preco_eth: '',
-        quantidade_ingressos: ''
+        quantidade_ingressos: '',
+        teto_revenda_eth: '',    // vazio = sem limite
+        royalty_pct: '10',       // padrão 10%
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -71,8 +73,14 @@ export function CreateEvent() {
 
             if (ticketPriceWei) {
                 payload.ticket_price_wei = ticketPriceWei;
-                payload.max_resale_price_wei = 0;
-                payload.royalty_bps = 1000; // 10%
+
+                // Teto de revenda: vazio ou 0 = sem limite
+                payload.max_resale_price_wei = eventData.teto_revenda_eth
+                    ? String(Math.round(parseFloat(eventData.teto_revenda_eth) * 1e18))
+                    : '0';
+
+                // Royalty: converte % para basis points (10% → 1000)
+                payload.royalty_bps = Math.round(parseFloat(eventData.royalty_pct || '10') * 100);
             }
 
             await api.post('/api/eventos', payload);
@@ -195,6 +203,51 @@ export function CreateEvent() {
                                     placeholder="100"
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-sky-500 outline-none"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Regras de Revenda */}
+                        <div className="border-t border-slate-100 pt-6">
+                            <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                <span className="bg-amber-100 text-amber-600 text-xs font-bold px-2 py-0.5 rounded-full">Anti-cambismo</span>
+                                Regras de Revenda
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-bold text-slate-700">
+                                        Teto de Revenda (ETH)
+                                        <span className="text-slate-400 font-normal ml-1">— vazio = sem limite</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.001"
+                                        min="0"
+                                        name="teto_revenda_eth"
+                                        value={eventData.teto_revenda_eth}
+                                        onChange={handleChange}
+                                        placeholder="Ex: 0.1 (deixe vazio para sem limite)"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-400 outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-bold text-slate-700">
+                                        Royalty por Revenda (%)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="1"
+                                        min="0"
+                                        max="50"
+                                        name="royalty_pct"
+                                        value={eventData.royalty_pct}
+                                        onChange={handleChange}
+                                        placeholder="10"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-400 outline-none"
+                                    />
+                                    <p className="text-xs text-slate-400">
+                                        Porcentagem que vai para a organização a cada revenda. Máx: 50%.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 

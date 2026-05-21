@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useMetaMask } from '../../hooks/useMetaMask';
+import QRCode from 'react-qr-code';
 
 type Ingresso = {
     id: number;
@@ -21,13 +22,22 @@ export function MeusIngressos() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const { listForResale, error: walletError } = useMetaMask();
+    const { listForResale, cancelResaleListing, error: walletError } = useMetaMask();
 
-    // Revenda
+    // Anunciar revenda
     const [revendaId, setRevendaId] = useState<number | null>(null);
     const [revendaEth, setRevendaEth] = useState('');
     const [revendaLoading, setRevendaLoading] = useState(false);
     const [revendaErro, setRevendaErro] = useState('');
+
+    // Cancelar revenda
+    const [cancelandoId, setCancelandoId] = useState<number | null>(null);
+
+    // QR Code modal
+    const [qrIngresso, setQrIngresso] = useState<Ingresso | null>(null);
+    const [qrToken, setQrToken] = useState<string | null>(null);
+    const [qrExpiraEm, setQrExpiraEm] = useState<number>(300);
+    const [qrSegsRestantes, setQrSegsRestantes] = useState<number>(300);
 
     useEffect(() => {
         const userStr = localStorage.getItem('@App:usuario');
@@ -100,6 +110,48 @@ export function MeusIngressos() {
         }
     };
 
+    const handleAbrirQr = async (ingresso: Ingresso) => {
+        setQrIngresso(ingresso);
+        setQrToken(null);
+        try {
+            const res = await api.get(`/api/ingressos/${ingresso.id}/gerar-qr`);
+            setQrToken(res.data.qr_token);
+            const ttl = res.data.expira_em ?? 300;
+            setQrExpiraEm(ttl);
+            setQrSegsRestantes(ttl);
+        } catch {
+            setQrToken('ERRO');
+        }
+    };
+
+    // Contador regressivo do QR
+    useEffect(() => {
+        if (!qrIngresso || !qrToken || qrToken === 'ERRO') return;
+        if (qrSegsRestantes <= 0) return;
+        const t = setTimeout(() => setQrSegsRestantes(s => s - 1), 1000);
+        return () => clearTimeout(t);
+    }, [qrIngresso, qrToken, qrSegsRestantes]);
+
+    const handleCancelarRevenda = async (ingresso: Ingresso) => {
+        if (!window.confirm(`Cancelar o anúncio de revenda do Token #${ingresso.token_id}?`)) return;
+        setCancelandoId(ingresso.id);
+        try {
+            const result = await cancelResaleListing(ingresso.token_id!);
+            if (!result) {
+                alert(walletError ?? 'Transação cancelada ou falhou no MetaMask.');
+                return;
+            }
+            await api.post(`/api/ingressos/${ingresso.id}/cancelar-revenda`, {
+                tx_hash: result.txHash,
+            });
+            carregarIngressos();
+        } catch {
+            alert('Erro ao cancelar revenda. Tente novamente.');
+        } finally {
+            setCancelandoId(null);
+        }
+    };
+
     const shortHash = (h: string) => `${h.slice(0, 10)}...${h.slice(-6)}`;
     const shortAddr = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
     const weiToEth = (w: string) => (Number(w) / 1e18).toFixed(4);
@@ -121,6 +173,82 @@ export function MeusIngressos() {
     };
 
     return (
+        <>
+        {/* Modal QR Code */}
+        {qrIngresso && (
+            <div
+                className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4"
+                onClick={() => { setQrIngresso(null); setQrToken(null); }}
+            >
+                <div
+                    className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <h2 className="text-xl font-extrabold text-[#0c1b35] mb-1">Ingresso NFT</h2>
+                    <p className="text-slate-500 text-sm mb-4">
+                        Apresente este QR Code na entrada do evento.
+                    </p>
+
+                    {/* QR ou loading */}
+                    <div className="flex justify-center bg-white p-4 rounded-2xl border border-slate-200 mb-3 min-h-[216px] items-center">
+                        {!qrToken ? (
+                            <span className="text-sky-500 font-bold animate-pulse">Gerando QR...</span>
+                        ) : qrToken === 'ERRO' ? (
+                            <span className="text-red-500 text-sm">Erro ao gerar QR. Tente novamente.</span>
+                        ) : qrSegsRestantes > 0 ? (
+                            <QRCode value={qrToken} size={200} bgColor="#ffffff" fgColor="#0c1b35" />
+                        ) : (
+                            <div className="flex flex-col items-center gap-2">
+                                <span className="text-4xl">⏰</span>
+                                <span className="text-slate-500 text-sm font-semibold">QR Code expirado</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Countdown */}
+                    {qrToken && qrToken !== 'ERRO' && (
+                        <div className={`text-sm font-bold mb-4 ${qrSegsRestantes <= 60 ? 'text-red-500' : 'text-slate-500'}`}>
+                            {qrSegsRestantes > 0
+                                ? `⏱ Válido por ${qrSegsRestantes}s`
+                                : 'Expirado'}
+                        </div>
+                    )}
+
+                    <div className="bg-slate-50 rounded-xl p-4 text-left space-y-2 text-sm mb-5">
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">Evento</span>
+                            <span className="font-bold text-slate-800 max-w-40 text-right truncate">{qrIngresso.evento}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">Token NFT</span>
+                            <span className="font-mono font-bold text-sky-600">#{qrIngresso.token_id}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">Status</span>
+                            <span className="font-semibold text-green-600">Ativo</span>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        {qrSegsRestantes <= 0 && (
+                            <button
+                                onClick={() => handleAbrirQr(qrIngresso)}
+                                className="flex-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors"
+                            >
+                                Renovar QR
+                            </button>
+                        )}
+                        <button
+                            onClick={() => { setQrIngresso(null); setQrToken(null); }}
+                            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div className="min-h-screen bg-slate-50 py-12 px-6">
             <div className="max-w-4xl mx-auto">
 
@@ -205,11 +333,28 @@ export function MeusIngressos() {
                                     )}
 
                                     {ing.status === 'ativo' && ing.token_id !== null && (
+                                        <div className="flex flex-col gap-1.5 mt-1">
+                                            <button
+                                                onClick={() => handleAbrirQr(ing)}
+                                                className="text-xs font-bold text-sky-600 border border-sky-200 hover:bg-sky-50 px-3 py-1.5 rounded-lg transition-colors"
+                                            >
+                                                🎫 Ver QR Code
+                                            </button>
+                                            <button
+                                                onClick={() => { setRevendaId(ing.id); setRevendaEth(''); setRevendaErro(''); }}
+                                                className="text-xs font-bold text-amber-600 border border-amber-300 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
+                                            >
+                                                Anunciar Revenda
+                                            </button>
+                                        </div>
+                                    )}
+                                    {ing.status === 'a_venda' && ing.token_id !== null && (
                                         <button
-                                            onClick={() => { setRevendaId(ing.id); setRevendaEth(''); setRevendaErro(''); }}
-                                            className="mt-1 text-xs font-bold text-amber-600 border border-amber-300 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
+                                            onClick={() => handleCancelarRevenda(ing)}
+                                            disabled={cancelandoId === ing.id}
+                                            className="mt-1 text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                                         >
-                                            Anunciar Revenda
+                                            {cancelandoId === ing.id ? 'Aguarde MetaMask...' : 'Cancelar Anúncio'}
                                         </button>
                                     )}
                                 </div>
@@ -258,5 +403,6 @@ export function MeusIngressos() {
                 </div>
             </div>
         </div>
+        </>
     );
 }
