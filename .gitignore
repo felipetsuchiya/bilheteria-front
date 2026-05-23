@@ -15,6 +15,14 @@ dist-ssr
 # Markdown files
 *.md
 
+# Agent files (VS Code Copilot customization)
+.instructions.md
+.prompt.md
+.agent.md
+SKILL.md
+copilot-instructions.md
+AGENTS.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
