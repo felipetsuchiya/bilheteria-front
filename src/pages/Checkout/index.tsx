@@ -92,11 +92,25 @@ export function Checkout() {
             setTxHash(result.txHash);
             setTokenId(result.tokenId);
             setStatus('success');
-        } catch {
-            setStatus('error');
-            setErrorMsg('NFT mintado! Mas falhou ao salvar no servidor. Guarde o txHash.');
+        } catch (e: any) {
             setTxHash(result.txHash);
             setTokenId(result.tokenId);
+
+            // JWT expirado ou inválido — sessão encerrada durante o mint
+            if (e.response?.status === 401) {
+                setStatus('error');
+                setErrorMsg(
+                    `⚠️ Seu NFT foi mintado com sucesso na blockchain, mas sua sessão expirou antes de salvarmos no sistema.\n\n` +
+                    `Guarde este txHash: ${result.txHash}\n\n` +
+                    `Faça login novamente e entre em contato com o suporte informando o txHash acima para regularizar seu ingresso.`
+                );
+                // Limpa o token expirado para forçar novo login
+                localStorage.removeItem('@App:token');
+                localStorage.removeItem('@App:usuario');
+            } else {
+                setStatus('error');
+                setErrorMsg(`NFT mintado! Mas falhou ao salvar no servidor.\nGuarde o txHash: ${result.txHash}`);
+            }
         }
     }
 

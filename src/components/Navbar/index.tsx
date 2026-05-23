@@ -8,7 +8,7 @@ export function Navbar() {
     const [user, setUser] = useState<any>(null);
     const navigate = useNavigate();
 
-    const { account, isConnecting, connect } = useMetaMask();
+    const { account, isConnecting, connect, disconnect } = useMetaMask();
 
     useEffect(() => {
         const loadUser = () => {
@@ -122,9 +122,17 @@ export function Navbar() {
                                     {(isCliente || isOrganizacao) && (
                                         <div className="px-4 py-2 border-b border-slate-700/50 mb-1">
                                             {account ? (
-                                                <div className="flex items-center gap-2 text-xs text-emerald-400">
-                                                    <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
-                                                    <span className="font-mono">{shortAddr(account)}</span>
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                                                        <span className="w-2 h-2 bg-emerald-400 rounded-full shrink-0"></span>
+                                                        <span className="font-mono">{shortAddr(account)}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => { disconnect(); setIsDropdownOpen(false); }}
+                                                        className="text-left text-xs text-slate-400 hover:text-orange-400 transition-colors"
+                                                    >
+                                                        Desconectar carteira
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 <button

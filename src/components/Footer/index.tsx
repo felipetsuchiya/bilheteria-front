@@ -8,7 +8,7 @@ export function Footer() {
           
           {/* Logo / Nome do Projeto */}
           <div className="text-2xl font-bold text-white tracking-wider">
-            Ko<span className="text-blue-500">ym</span>
+            Ko<span className="text-blue-500">yn</span>
           </div>
 
           {/* Links de Navegação */}
@@ -29,7 +29,7 @@ export function Footer() {
 
           {/* Direitos Autorais */}
           <div className="text-sm text-gray-500">
-            &copy; {currentYear} KOYM. Todos os direitos reservados.
+            &copy; {currentYear} KOYN. Todos os direitos reservados.
           </div>
           
         </div>

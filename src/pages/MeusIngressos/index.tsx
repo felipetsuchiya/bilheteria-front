@@ -14,6 +14,8 @@ type Ingresso = {
     carteira_comprador: string | null;
     resale_price_wei: string | null;
     max_resale_price_wei: string | null;
+    num_revendas: number;
+    revendas_restantes: number;
 };
 
 export function MeusIngressos() {
@@ -351,12 +353,30 @@ export function MeusIngressos() {
                                             >
                                                 🎫 Ver QR Code
                                             </button>
-                                            <button
-                                                onClick={() => { setRevendaId(ing.id); setRevendaEth(''); setRevendaErro(''); }}
-                                                className="text-xs font-bold text-amber-600 border border-amber-300 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
-                                            >
-                                                Anunciar Revenda
-                                            </button>
+
+                                            {/* Contador de revendas */}
+                                            <div className={`text-xs font-medium px-2 py-0.5 rounded-full text-center ${
+                                                ing.revendas_restantes <= 0
+                                                    ? 'bg-red-100 text-red-600'
+                                                    : ing.revendas_restantes === 1
+                                                        ? 'bg-amber-100 text-amber-700'
+                                                        : 'bg-slate-100 text-slate-500'
+                                            }`}>
+                                                🔄 {ing.num_revendas}/{ing.num_revendas + ing.revendas_restantes} revendas usadas
+                                            </div>
+
+                                            {ing.revendas_restantes > 0 ? (
+                                                <button
+                                                    onClick={() => { setRevendaId(ing.id); setRevendaEth(''); setRevendaErro(''); }}
+                                                    className="text-xs font-bold text-amber-600 border border-amber-300 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
+                                                >
+                                                    Anunciar Revenda
+                                                </button>
+                                            ) : (
+                                                <div className="text-xs text-red-500 font-semibold px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg text-center">
+                                                    Limite de revendas atingido
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     {ing.status === 'a_venda' && ing.token_id !== null && (

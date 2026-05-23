@@ -158,5 +158,22 @@ export function useMetaMask() {
     }
   }, [account, connect]);
 
-  return { account, isConnecting, isMinting, error, connect, mintTicket, listForResale, buyResaleTicket, cancelResaleListing };
+  const disconnect = useCallback(async () => {
+    // Tenta revogar permissões via API do MetaMask (suportado em versões recentes)
+    try {
+      if (window.ethereum?.request) {
+        await window.ethereum.request({
+          method: 'wallet_revokePermissions',
+          params: [{ eth_accounts: {} }],
+        });
+      }
+    } catch {
+      // API não suportada na versão do MetaMask — ignora silenciosamente
+    }
+    // Sempre limpa o estado local da aplicação
+    setAccount(null);
+    setError(null);
+  }, []);
+
+  return { account, isConnecting, isMinting, error, connect, disconnect, mintTicket, listForResale, buyResaleTicket, cancelResaleListing };
 }

@@ -134,7 +134,7 @@ export function CreateEvent() {
                                 value={eventData.nome}
                                 onChange={handleChange}
                                 required
-                                placeholder="Ex: Workshop Web3 Koym"
+                                placeholder="Ex: Workshop Web3 Koyn"
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-sky-500 outline-none transition-all"
                             />
                         </div>

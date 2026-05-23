@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../services/api';
 
 
 export function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
+    // Se o usuário foi redirecionado de uma rota protegida, voltar para ela após login
+    const from = (location.state as any)?.from?.pathname || null;
 
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
@@ -32,7 +35,9 @@ export function Login() {
                 window.dispatchEvent(new Event('authChange'));
             }
 
-            if (usuario.tipo === 'organizacao') {
+            if (from) {
+                navigate(from, { replace: true });
+            } else if (usuario.tipo === 'organizacao') {
                 navigate('/dashboard');
             } else if (usuario.tipo === 'cliente') {
                 navigate('/');
@@ -63,7 +68,7 @@ export function Login() {
                 <div className="flex flex-col items-center gap-8 z-10 relative">
                     <div className="flex items-center text-2xl font-bold">
                         <span className="text-white">Ko</span>
-                        <span className="text-sky-400">ym</span>
+                        <span className="text-sky-400">yn</span>
                     </div>
 
                     <div className="text-center">
@@ -102,8 +107,12 @@ export function Login() {
                                 <label htmlFor="password" className="text-sm font-medium text-slate-200">
                                     Senha
                                 </label>
-                                <a href="#" className="text-sm font-medium text-sky-400 hover:text-sky-300">
-                                    Esqueceu a senha?
+                                <a
+                                    href="/cadastro/cliente"
+                                    className="text-sm font-medium text-sky-400 hover:text-sky-300"
+                                    title="Crie uma nova conta"
+                                >
+                                    Criar nova conta
                                 </a>
                             </div>
                             <input
