@@ -13,6 +13,7 @@ export function Login() {
     const [senha, setSenha] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const successMessage = (location.state as any)?.mensagem || '';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -79,6 +80,12 @@ export function Login() {
                             Acesse seus ingressos exclusivos e eventos globais com NFT.
                         </p>
                     </div>
+
+                    {successMessage && (
+                        <div className="w-full p-3 bg-green-500/20 border border-green-500 text-green-300 text-sm rounded-lg text-center">
+                            {successMessage}
+                        </div>
+                    )}
 
                     {errorMessage && (
                         <div className="w-full p-3 bg-red-500/20 border border-red-500 text-red-300 text-sm rounded-lg text-center">

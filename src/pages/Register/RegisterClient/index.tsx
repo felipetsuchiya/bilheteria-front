@@ -51,10 +51,8 @@ export function RegisterClient() {
         };
 
         try {
-            const response = await api.post('/auth/register-cliente', payload);
-            console.log('Cliente criado com sucesso:', response.data);
-            alert('Conta criada com sucesso!');
-            navigate('/login')
+            await api.post('/auth/register-cliente', payload);
+            navigate('/login', { state: { mensagem: 'Conta criada com sucesso! Faça login para continuar.' } });
 
         } catch (error: any) {
             console.error('Erro na integração:', error);

@@ -34,6 +34,8 @@ export function MeusIngressos() {
 
     // Cancelar revenda
     const [cancelandoId, setCancelandoId] = useState<number | null>(null);
+    const [cancelarConfirmaId, setCancelarConfirmaId] = useState<number | null>(null);
+    const [cancelarErro, setCancelarErro] = useState('');
 
     // QR Code modal
     const [qrIngresso, setQrIngresso] = useState<Ingresso | null>(null);
@@ -135,12 +137,13 @@ export function MeusIngressos() {
     }, [qrIngresso, qrToken, qrSegsRestantes]);
 
     const handleCancelarRevenda = async (ingresso: Ingresso) => {
-        if (!window.confirm(`Cancelar o anúncio de revenda do Token #${ingresso.token_id}?`)) return;
+        setCancelarConfirmaId(null);
+        setCancelarErro('');
         setCancelandoId(ingresso.id);
         try {
             const result = await cancelResaleListing(ingresso.token_id!);
             if (!result) {
-                alert(walletError ?? 'Transação cancelada ou falhou no MetaMask.');
+                setCancelarErro(walletError ?? 'Transação cancelada ou falhou no MetaMask.');
                 return;
             }
             await api.post(`/api/ingressos/${ingresso.id}/cancelar-revenda`, {
@@ -148,7 +151,7 @@ export function MeusIngressos() {
             });
             carregarIngressos();
         } catch {
-            alert('Erro ao cancelar revenda. Tente novamente.');
+            setCancelarErro('Erro ao cancelar revenda. Tente novamente.');
         } finally {
             setCancelandoId(null);
         }
@@ -380,13 +383,34 @@ export function MeusIngressos() {
                                         </div>
                                     )}
                                     {ing.status === 'a_venda' && ing.token_id !== null && (
-                                        <button
-                                            onClick={() => handleCancelarRevenda(ing)}
-                                            disabled={cancelandoId === ing.id}
-                                            className="mt-1 text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                                        >
-                                            {cancelandoId === ing.id ? 'Aguarde MetaMask...' : 'Cancelar Anúncio'}
-                                        </button>
+                                        cancelarConfirmaId === ing.id ? (
+                                            <div className="mt-1 flex flex-col gap-1.5">
+                                                <p className="text-xs text-slate-600 font-medium">Cancelar anúncio do Token #{ing.token_id}?</p>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleCancelarRevenda(ing)}
+                                                        disabled={cancelandoId === ing.id}
+                                                        className="flex-1 text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                                                    >
+                                                        {cancelandoId === ing.id ? 'Aguarde...' : 'Confirmar'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setCancelarConfirmaId(null); setCancelarErro(''); }}
+                                                        className="flex-1 text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
+                                                    >
+                                                        Voltar
+                                                    </button>
+                                                </div>
+                                                {cancelarErro && <p className="text-red-500 text-xs">{cancelarErro}</p>}
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => setCancelarConfirmaId(ing.id)}
+                                                className="mt-1 text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                                            >
+                                                Cancelar Anúncio
+                                            </button>
+                                        )
                                     )}
                                 </div>
                             </div>

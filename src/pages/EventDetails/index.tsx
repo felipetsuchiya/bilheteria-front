@@ -64,7 +64,7 @@ export function EventDetails() {
 
     function handleComprar() {
         if (!isLoggedIn) {
-            alert('Você precisa estar logado para comprar um ingresso.');
+            navigate('/login', { state: { from: `/detalhes/${id}` } });
             return;
         }
         navigate(`/checkout/${id}`);
