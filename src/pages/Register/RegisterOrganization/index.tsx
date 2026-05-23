@@ -46,12 +46,8 @@ export function RegisterOrganization() {
         };
 
         try {
-            // Chamada para a rota do Flask
-            const response = await api.post('/auth/register-organizacao', payload);
-
-            console.log('Organização registrada com sucesso:', response.data);
-            alert('Conta de organização criada com sucesso!');
-            navigate('/login')
+            await api.post('/auth/register-organizacao', payload);
+            navigate('/login', { state: { mensagem: 'Conta de organização criada com sucesso! Faça login para continuar.' } });
 
         } catch (error: any) {
             console.error('Erro ao integrar com a API Flask:', error);

@@ -23,6 +23,7 @@ export function EditEvent() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [confirmarExclusao, setConfirmarExclusao] = useState(false);
 
     useEffect(() => {
         const userStr = localStorage.getItem('@App:usuario');
@@ -95,8 +96,7 @@ export function EditEvent() {
             };
 
             await api.put(`/api/eventos/${id}`, payload);
-            alert('Evento atualizado com sucesso!');
-            navigate('/dashboard');
+            navigate('/dashboard', { state: { mensagem: 'Evento atualizado com sucesso!' } });
         } catch (error: any) {
             const msgErro = error.response?.data?.mensagem || error.response?.data?.erro || 'Erro ao alterar evento.';
             setErrorMessage(msgErro);
@@ -106,14 +106,12 @@ export function EditEvent() {
     };
 
     const handleDelete = async () => {
-        if (window.confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.')) {
-            try {
-                await api.delete(`/api/eventos/${id}`);
-                alert('Evento excluído!');
-                navigate('/dashboard');
-            } catch (error) {
-                setErrorMessage('Erro ao excluir evento.');
-            }
+        try {
+            await api.delete(`/api/eventos/${id}`);
+            navigate('/dashboard', { state: { mensagem: 'Evento excluído com sucesso.' } });
+        } catch (error) {
+            setErrorMessage('Erro ao excluir evento.');
+            setConfirmarExclusao(false);
         }
     };
 
@@ -229,13 +227,35 @@ export function EditEvent() {
                                     {isLoading ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
                                 </button>
 
-                                <button
-                                    type="button"
-                                    onClick={handleDelete}
-                                    className="px-8 py-4 border-2 border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 transition-all"
-                                >
-                                    EXCLUIR
-                                </button>
+                                {!confirmarExclusao ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmarExclusao(true)}
+                                        className="px-8 py-4 border-2 border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 transition-all"
+                                    >
+                                        EXCLUIR
+                                    </button>
+                                ) : (
+                                    <div className="flex flex-col gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                        <p className="text-sm font-semibold text-red-700">Tem certeza? Esta ação não pode ser desfeita.</p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleDelete}
+                                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-xl transition-colors"
+                                            >
+                                                Confirmar exclusão
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setConfirmarExclusao(false)}
+                                                className="flex-1 border border-slate-200 text-slate-600 font-bold py-2 rounded-xl hover:bg-slate-100 transition-colors"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </form>
                     </div>

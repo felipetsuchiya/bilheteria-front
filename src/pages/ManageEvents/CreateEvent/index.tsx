@@ -84,8 +84,7 @@ export function CreateEvent() {
             }
 
             await api.post('/api/eventos', payload);
-            alert('Evento criado com sucesso!');
-            navigate('/dashboard');
+            navigate('/dashboard', { state: { mensagem: 'Evento criado com sucesso!' } });
 
         } catch (error: any) {
             console.error("Erro completo:", error.response?.data);

@@ -42,6 +42,7 @@ export function MeusIngressos() {
     const [qrToken, setQrToken] = useState<string | null>(null);
     const [qrExpiraEm, setQrExpiraEm] = useState<number>(300);
     const [qrSegsRestantes, setQrSegsRestantes] = useState<number>(300);
+    const [copiado, setCopiado] = useState(false);
 
     useEffect(() => {
         const userStr = localStorage.getItem('@App:usuario');
@@ -239,11 +240,12 @@ export function MeusIngressos() {
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(qrToken);
-                                    alert('Token copiado! Cole no campo "QR Token" do Dashboard do organizador.');
+                                    setCopiado(true);
+                                    setTimeout(() => setCopiado(false), 2000);
                                 }}
-                                className="flex-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors text-sm"
+                                className={`flex-1 font-bold py-3 rounded-xl transition-colors text-sm ${copiado ? 'bg-green-500 text-white' : 'bg-sky-500 hover:bg-sky-600 text-white'}`}
                             >
-                                📋 Copiar Token
+                                {copiado ? '✓ Copiado!' : '📋 Copiar Token'}
                             </button>
                         )}
                         {qrSegsRestantes <= 0 && (
