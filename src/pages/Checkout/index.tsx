@@ -48,7 +48,7 @@ export function Checkout() {
     async function handleMint() {
         setErrorMsg('');
 
-        if (!event?.blockchain_event_id) {
+        if (event?.blockchain_event_id == null) {
             setErrorMsg('Este evento não está disponível para compra na blockchain.');
             return;
         }
@@ -323,7 +323,7 @@ export function Checkout() {
 
                             <button
                                 onClick={handleMint}
-                                disabled={isLoading || !event.blockchain_event_id}
+                                disabled={isLoading || event.blockchain_event_id == null}
                                 className="w-full bg-[#0d59f7] hover:bg-[#0047e0] disabled:bg-slate-700 disabled:text-slate-400 text-white font-extrabold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
                             >
                                 {status === 'connecting' || isConnecting ? (
@@ -342,7 +342,7 @@ export function Checkout() {
                                 )}
                             </button>
 
-                            {!event.blockchain_event_id && (
+                            {event.blockchain_event_id == null && (
                                 <p className="text-center text-xs text-amber-400 mt-3">
                                     Venda blockchain não configurada para este evento.
                                 </p>

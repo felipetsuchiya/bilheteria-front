@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
+import { useMetaMask } from '../../../hooks/useMetaMask';
 
 export function CreateEvent() {
     const navigate = useNavigate();
     const [, setUser] = useState<any>(null);
+
+    const { account, isConnecting, connect } = useMetaMask();
 
     const [eventData, setEventData] = useState({
         nome: '',
@@ -41,6 +44,10 @@ export function CreateEvent() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!account) {
+            setErrorMessage('Conecte sua MetaMask antes de criar o evento. Sua carteira é necessária para receber os pagamentos dos ingressos.');
+            return;
+        }
         setIsLoading(true);
         setErrorMessage('');
 
@@ -83,7 +90,7 @@ export function CreateEvent() {
                 payload.royalty_bps = Math.round(parseFloat(eventData.royalty_pct || '10') * 100);
             }
 
-            await api.post('/api/eventos', payload);
+            await api.post('/api/eventos', payload, { timeout: 150000 });
             navigate('/dashboard', { state: { mensagem: 'Evento criado com sucesso!' } });
 
         } catch (error: any) {
@@ -119,6 +126,22 @@ export function CreateEvent() {
                     </div>
 
                     <form onSubmit={handleSave} className="p-8 flex flex-col gap-6">
+                        {!account && (
+                            <div className="flex items-center justify-between gap-4 p-4 bg-amber-50 border border-amber-300 rounded-xl">
+                                <p className="text-amber-800 text-sm font-medium">
+                                    🦊 MetaMask não conectada. Sua carteira é necessária para receber os pagamentos dos ingressos.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={connect}
+                                    disabled={isConnecting}
+                                    className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                    {isConnecting ? 'Conectando...' : 'Conectar'}
+                                </button>
+                            </div>
+                        )}
+
                         {errorMessage && (
                             <div className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm font-medium">
                                 {errorMessage}
@@ -252,10 +275,10 @@ export function CreateEvent() {
 
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || !account}
                             className="w-full bg-[#0d59f7] hover:bg-[#0047e0] text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:bg-slate-400 mt-4"
                         >
-                            {isLoading ? 'SALVANDO...' : 'CRIAR EVENTO'}
+                            {isLoading ? 'SALVANDO...' : !account ? 'CONECTE SUA METAMASK' : 'CRIAR EVENTO'}
                         </button>
                     </form>
                 </div>

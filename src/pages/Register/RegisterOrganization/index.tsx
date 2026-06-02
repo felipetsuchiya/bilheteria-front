@@ -51,12 +51,11 @@ export function RegisterOrganization() {
 
         } catch (error: any) {
             console.error('Erro ao integrar com a API Flask:', error);
-
-            if (error.response && error.response.data && error.response.data.message) {
-                setErrorMessage(error.response.data.message);
-            } else {
-                setErrorMessage('Erro ao criar conta. Verifique os dados e tente novamente.');
-            }
+            const msg = error.response?.data?.erro
+                || error.response?.data?.message
+                || error.response?.data?.mensagem
+                || 'Erro ao criar conta. Verifique os dados e tente novamente.';
+            setErrorMessage(msg);
         } finally {
             setIsLoading(false);
         }

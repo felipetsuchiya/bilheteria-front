@@ -18,7 +18,7 @@ export function EventDetails() {
     const [event, setEvent] = useState<any>(null);
     const [isFetching, setIsFetching] = useState(true);
 
-    const { account, error: walletError, buyResaleTicket } = useMetaMask();
+    const { account, isConnecting, connect, error: walletError, buyResaleTicket } = useMetaMask();
 
     const [revendas, setRevendas] = useState<Revenda[]>([]);
     const [buyStatus, setBuyStatus] = useState<BuyStatus>('idle');
@@ -208,6 +208,24 @@ export function EventDetails() {
                 </div>
             </div>
 
+            {/* BANNER METAMASK */}
+            {!account && (
+                <div className="w-full max-w-3xl px-6 mb-4">
+                    <div className="flex items-center justify-between gap-4 p-4 bg-amber-50 border border-amber-300 rounded-xl">
+                        <p className="text-amber-800 text-sm font-medium">
+                            🦊 MetaMask não conectada. Conecte sua carteira para comprar ingressos.
+                        </p>
+                        <button
+                            onClick={connect}
+                            disabled={isConnecting}
+                            className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {isConnecting ? 'Conectando...' : 'Conectar'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* MERCADO DE REVENDA */}
             {revendas.length > 0 && (
                 <div className="w-full max-w-3xl px-6 mb-10">
@@ -272,13 +290,13 @@ export function EventDetails() {
                         <span className="font-bold text-xl text-slate-800">Ingresso Único</span>
                         <span className="font-medium text-sky-500 mt-1">{priceEth}</span>
                         <span className="text-xs text-gray-400 mt-1">NFT ERC-721 • Rede Sepolia</span>
-                        {!event.blockchain_event_id && (
+                        {event.blockchain_event_id == null && (
                             <span className="text-xs text-amber-500 mt-1">Venda blockchain não configurada</span>
                         )}
                     </div>
                     <button
                         onClick={handleComprar}
-                        disabled={!event.blockchain_event_id}
+                        disabled={event.blockchain_event_id == null}
                         className="px-10 py-4 text-white font-extrabold text-lg bg-[#0d59f7] hover:bg-[#0047e0] rounded-2xl shadow-xl transition-transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                     >
                         {account ? 'Comprar com MetaMask' : 'Comprar Ingresso'}

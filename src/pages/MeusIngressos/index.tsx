@@ -24,7 +24,7 @@ export function MeusIngressos() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const { listForResale, cancelResaleListing, error: walletError } = useMetaMask();
+    const { account, isConnecting, connect, listForResale, cancelResaleListing, error: walletError } = useMetaMask();
 
     // Anunciar revenda
     const [revendaId, setRevendaId] = useState<number | null>(null);
@@ -40,7 +40,7 @@ export function MeusIngressos() {
     // QR Code modal
     const [qrIngresso, setQrIngresso] = useState<Ingresso | null>(null);
     const [qrToken, setQrToken] = useState<string | null>(null);
-    const [qrExpiraEm, setQrExpiraEm] = useState<number>(300);
+    const [, setQrExpiraEm] = useState<number>(300);
     const [qrSegsRestantes, setQrSegsRestantes] = useState<number>(300);
     const [copiado, setCopiado] = useState(false);
 
@@ -277,6 +277,21 @@ export function MeusIngressos() {
                     <p className="text-slate-500 mt-1">Seus NFTs de ingresso registrados na blockchain Sepolia.</p>
                 </div>
 
+                {!account && (
+                    <div className="flex items-center justify-between gap-4 p-4 bg-amber-50 border border-amber-300 rounded-xl mb-6">
+                        <p className="text-amber-800 text-sm font-medium">
+                            🦊 MetaMask não conectada. Conecte sua carteira para anunciar ou cancelar revendas.
+                        </p>
+                        <button
+                            onClick={connect}
+                            disabled={isConnecting}
+                            className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {isConnecting ? 'Conectando...' : 'Conectar'}
+                        </button>
+                    </div>
+                )}
+
                 {isLoading && (
                     <div className="text-center text-sky-500 font-bold py-20 animate-pulse">
                         Carregando seus ingressos...
@@ -373,9 +388,11 @@ export function MeusIngressos() {
                                             {ing.revendas_restantes > 0 ? (
                                                 <button
                                                     onClick={() => { setRevendaId(ing.id); setRevendaEth(''); setRevendaErro(''); }}
-                                                    className="text-xs font-bold text-amber-600 border border-amber-300 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
+                                                    disabled={!account}
+                                                    title={!account ? 'Conecte sua MetaMask para anunciar revenda' : ''}
+                                                    className="text-xs font-bold text-amber-600 border border-amber-300 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
-                                                    Anunciar Revenda
+                                                    {!account ? '🦊 MetaMask necessária' : 'Anunciar Revenda'}
                                                 </button>
                                             ) : (
                                                 <div className="text-xs text-red-500 font-semibold px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg text-center">
@@ -408,9 +425,11 @@ export function MeusIngressos() {
                                         ) : (
                                             <button
                                                 onClick={() => setCancelarConfirmaId(ing.id)}
-                                                className="mt-1 text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                                                disabled={!account}
+                                                title={!account ? 'Conecte sua MetaMask para cancelar o anúncio' : ''}
+                                                className="mt-1 text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
-                                                Cancelar Anúncio
+                                                {!account ? '🦊 MetaMask necessária' : 'Cancelar Anúncio'}
                                             </button>
                                         )
                                     )}
@@ -438,7 +457,7 @@ export function MeusIngressos() {
                                         </div>
                                         <button
                                             onClick={() => handleAnunciarRevenda(ing)}
-                                            disabled={revendaLoading}
+                                            disabled={revendaLoading || !account}
                                             className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-xl disabled:opacity-50 transition-colors"
                                         >
                                             {revendaLoading ? 'Aguarde MetaMask...' : 'Confirmar'}
