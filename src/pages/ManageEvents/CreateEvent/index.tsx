@@ -3,6 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useMetaMask } from '../../../hooks/useMetaMask';
 
+const CONTRACT_ADDRESS = '0x998B81b2DA9677e84B892d0A02Aa2c4238676CD6';
+
+type SuccessData = {
+    id: number;
+    nome: string;
+    blockchain_event_id: number;
+    ticket_price_wei: string;
+    max_resale_price_wei: string;
+    quantidade_ingressos: number;
+    royalty_bps: number;
+};
+
 export function CreateEvent() {
     const navigate = useNavigate();
     const [, setUser] = useState<any>(null);
@@ -16,12 +28,13 @@ export function CreateEvent() {
         local_evento: '',
         preco_eth: '',
         quantidade_ingressos: '',
-        teto_revenda_eth: '',    // vazio = sem limite
-        royalty_pct: '10',       // padrão 10%
+        teto_revenda_eth: '',
+        royalty_pct: '10',
     });
 
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [successData, setSuccessData] = useState<SuccessData | null>(null);
 
     useEffect(() => {
         const userStr = localStorage.getItem('@App:usuario');
@@ -52,23 +65,18 @@ export function CreateEvent() {
         setErrorMessage('');
 
         try {
-            // 1. Formatação blindada para o formato SQL que o backend espera no POST
             let dataHoraFormatada = '';
             if (eventData.data_evento) {
-                // Divide "2026-06-15T00:00" em Data e Hora
                 const [datePart, timePart] = eventData.data_evento.split('T');
-                
-                // Se a hora vier só com "HH:MM", adicionamos os segundos ":00"
                 const timeWithSeconds = timePart.length === 5 ? `${timePart}:00` : timePart;
-                
-                // Junta tudo no formato esperado: "YYYY-MM-DD HH:MM:SS"
                 dataHoraFormatada = `${datePart} ${timeWithSeconds}`;
             }
 
-            // Converte ETH → wei (string para preservar precisão)
             const ticketPriceWei = eventData.preco_eth
                 ? String(Math.round(parseFloat(eventData.preco_eth) * 1e18))
                 : undefined;
+
+            const royalty_bps = Math.round(parseFloat(eventData.royalty_pct || '10') * 100);
 
             const payload: any = {
                 nome: eventData.nome,
@@ -80,24 +88,29 @@ export function CreateEvent() {
 
             if (ticketPriceWei) {
                 payload.ticket_price_wei = ticketPriceWei;
-
-                // Teto de revenda: vazio ou 0 = sem limite
                 payload.max_resale_price_wei = eventData.teto_revenda_eth
                     ? String(Math.round(parseFloat(eventData.teto_revenda_eth) * 1e18))
                     : '0';
-
-                // Royalty: converte % para basis points (10% → 1000)
-                payload.royalty_bps = Math.round(parseFloat(eventData.royalty_pct || '10') * 100);
+                payload.royalty_bps = royalty_bps;
             }
 
-            await api.post('/api/eventos', payload, { timeout: 150000 });
-            navigate('/dashboard', { state: { mensagem: 'Evento criado com sucesso!' } });
+            const res = await api.post('/api/eventos', payload, { timeout: 150000 });
+
+            setSuccessData({
+                id: res.data.id,
+                nome: res.data.nome,
+                blockchain_event_id: res.data.blockchain_event_id,
+                ticket_price_wei: res.data.ticket_price_wei,
+                max_resale_price_wei: res.data.max_resale_price_wei,
+                quantidade_ingressos: res.data.quantidade_ingressos,
+                royalty_bps,
+            });
 
         } catch (error: any) {
             console.error("Erro completo:", error.response?.data);
             const msgErro = error.response?.data?.mensagem
                 || error.response?.data?.erro
-                || (error.code === 'ECONNABORTED' ? 'Timeout — backend demorou demais.' : null)
+                || (error.code === 'ECONNABORTED' ? 'Timeout — a transação está sendo confirmada na blockchain. Aguarde e tente novamente com o mesmo nome.' : null)
                 || (!error.response ? 'Sem resposta do servidor. Backend está rodando?' : null)
                 || `Erro ${error.response?.status}: Erro ao salvar evento.`;
             setErrorMessage(msgErro);
@@ -106,6 +119,93 @@ export function CreateEvent() {
         }
     };
 
+    const shortAddr = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
+    const weiToEth = (wei: string | null) =>
+        !wei || wei === '0' ? '—' : (Number(wei) / 1e18).toFixed(4) + ' ETH';
+
+    // ── TELA DE SUCESSO ──────────────────────────────────────────────
+    if (successData) return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+            <div className="bg-white rounded-3xl shadow-xl border border-green-100 p-10 max-w-md w-full text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+
+                <h2 className="text-2xl font-extrabold text-[#0c1b35] mb-2">Evento Criado!</h2>
+                <p className="text-slate-500 mb-6">
+                    O evento foi registrado no sistema e na blockchain Sepolia.
+                </p>
+
+                <div className="bg-slate-50 rounded-xl p-4 text-left space-y-3 mb-6">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Nome</span>
+                        <span className="font-bold text-slate-800 text-right max-w-52 truncate">{successData.nome}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Event ID on-chain</span>
+                        <span className="font-mono font-bold text-sky-600">#{successData.blockchain_event_id}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Preço</span>
+                        <span className="font-bold text-emerald-600">{weiToEth(successData.ticket_price_wei)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Teto de revenda</span>
+                        <span className="font-bold text-slate-700">
+                            {successData.max_resale_price_wei === '0' || !successData.max_resale_price_wei
+                                ? 'Sem limite'
+                                : weiToEth(successData.max_resale_price_wei)}
+                        </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Royalty</span>
+                        <span className="font-bold text-slate-700">{(successData.royalty_bps / 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Capacidade</span>
+                        <span className="font-bold text-slate-700">{successData.quantidade_ingressos} ingressos</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Organizador</span>
+                        <span className="font-mono text-slate-600">{account ? shortAddr(account) : '—'}</span>
+                    </div>
+                    <div className="text-sm pt-1 border-t border-slate-100">
+                        <span className="text-slate-500 font-medium block mb-1">Contrato na Sepolia</span>
+                        <a
+                            href={`https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-mono text-sky-600 hover:underline break-all text-xs"
+                        >
+                            {CONTRACT_ADDRESS}
+                        </a>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <button
+                        onClick={() => navigate('/dashboard')}
+                        className="w-full bg-[#0d59f7] hover:bg-[#0047e0] text-white font-extrabold py-3 rounded-xl transition-colors"
+                    >
+                        Ir para o Dashboard
+                    </button>
+                    <button
+                        onClick={() => {
+                            setSuccessData(null);
+                            setEventData({ nome: '', descricao: '', data_evento: '', local_evento: '', preco_eth: '', quantidade_ingressos: '', teto_revenda_eth: '', royalty_pct: '10' });
+                        }}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                    >
+                        Criar Outro Evento
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
+    // ── FORMULÁRIO ───────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-slate-100 p-6 md:p-12">
             <div className="max-w-3xl mx-auto">
@@ -143,7 +243,7 @@ export function CreateEvent() {
                         )}
 
                         {errorMessage && (
-                            <div className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm font-medium">
+                            <div className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm font-medium whitespace-pre-line">
                                 {errorMessage}
                             </div>
                         )}
@@ -228,7 +328,6 @@ export function CreateEvent() {
                             </div>
                         </div>
 
-                        {/* Regras de Revenda */}
                         <div className="border-t border-slate-100 pt-6">
                             <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                                 <span className="bg-amber-100 text-amber-600 text-xs font-bold px-2 py-0.5 rounded-full">Anti-cambismo</span>
@@ -252,9 +351,7 @@ export function CreateEvent() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-700">
-                                        Royalty por Revenda (%)
-                                    </label>
+                                    <label className="text-sm font-bold text-slate-700">Royalty por Revenda (%)</label>
                                     <input
                                         type="number"
                                         step="1"
@@ -266,19 +363,27 @@ export function CreateEvent() {
                                         placeholder="10"
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-400 outline-none"
                                     />
-                                    <p className="text-xs text-slate-400">
-                                        Porcentagem que vai para a organização a cada revenda. Máx: 50%.
-                                    </p>
+                                    <p className="text-xs text-slate-400">Porcentagem que vai para a organização a cada revenda. Máx: 50%.</p>
                                 </div>
                             </div>
                         </div>
+
+                        {isLoading && (
+                            <div className="flex items-center gap-3 p-4 bg-sky-50 border border-sky-200 rounded-xl text-sky-700 text-sm font-medium">
+                                <svg className="w-5 h-5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                                </svg>
+                                Registrando evento na blockchain Sepolia... Aguarde a confirmação da transação (pode levar até 60s).
+                            </div>
+                        )}
 
                         <button
                             type="submit"
                             disabled={isLoading || !account}
                             className="w-full bg-[#0d59f7] hover:bg-[#0047e0] text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:bg-slate-400 mt-4"
                         >
-                            {isLoading ? 'SALVANDO...' : !account ? 'CONECTE SUA METAMASK' : 'CRIAR EVENTO'}
+                            {isLoading ? 'REGISTRANDO NA BLOCKCHAIN...' : !account ? 'CONECTE SUA METAMASK' : 'CRIAR EVENTO'}
                         </button>
                     </form>
                 </div>
