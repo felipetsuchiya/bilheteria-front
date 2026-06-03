@@ -32,6 +32,14 @@ export function MeusIngressos() {
     const [revendaLoading, setRevendaLoading] = useState(false);
     const [revendaErro, setRevendaErro] = useState('');
 
+    // Sucesso da revenda
+    const [revendaSuccess, setRevendaSuccess] = useState<{
+        txHash: string;
+        tokenId: number;
+        priceWei: string;
+        eventoNome: string;
+    } | null>(null);
+
     // Cancelar revenda
     const [cancelandoId, setCancelandoId] = useState<number | null>(null);
     const [cancelarConfirmaId, setCancelarConfirmaId] = useState<number | null>(null);
@@ -106,8 +114,12 @@ export function MeusIngressos() {
 
             setRevendaId(null);
             setRevendaEth('');
-            setIsLoading(true);
-            carregarIngressos();
+            setRevendaSuccess({
+                txHash: result.txHash,
+                tokenId: ingresso.token_id!,
+                priceWei,
+                eventoNome: ingresso.evento,
+            });
         } catch (e: any) {
             setRevendaErro(e.response?.data?.erro || 'Erro ao anunciar revenda.');
         } finally {
@@ -180,6 +192,72 @@ export function MeusIngressos() {
 
     return (
         <>
+        {/* Modal Sucesso Revenda */}
+        {revendaSuccess && (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center">
+
+                    <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                        <svg className="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+
+                    <h2 className="text-xl font-extrabold text-[#0c1b35] mb-1">Ingresso Anunciado!</h2>
+                    <p className="text-slate-500 text-sm mb-5">
+                        Seu ingresso está listado no mercado de revenda on-chain.
+                    </p>
+
+                    <div className="bg-slate-50 rounded-xl p-4 text-left space-y-3 mb-5">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">Evento</span>
+                            <span className="font-bold text-slate-800 text-right max-w-44 truncate">
+                                {revendaSuccess.eventoNome}
+                            </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">Token NFT</span>
+                            <span className="font-mono font-bold text-sky-600">#{revendaSuccess.tokenId}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">Preço anunciado</span>
+                            <span className="font-bold text-amber-600">
+                                {(Number(revendaSuccess.priceWei) / 1e18).toFixed(4)} ETH
+                            </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">Carteira</span>
+                            <span className="font-mono text-slate-600">
+                                {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : '—'}
+                            </span>
+                        </div>
+                        <div className="text-sm pt-1 border-t border-slate-100">
+                            <span className="text-slate-500 font-medium block mb-1">Transação</span>
+                            <a
+                                href={`https://sepolia.etherscan.io/tx/${revendaSuccess.txHash}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-mono text-sky-600 hover:underline break-all text-xs"
+                            >
+                                {revendaSuccess.txHash}
+                            </a>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            setRevendaSuccess(null);
+                            setIsLoading(true);
+                            carregarIngressos();
+                        }}
+                        className="w-full bg-[#0d59f7] hover:bg-[#0047e0] text-white font-extrabold py-3 rounded-xl transition-colors"
+                    >
+                        Ver Meus Ingressos
+                    </button>
+                </div>
+            </div>
+        )}
+
         {/* Modal QR Code */}
         {qrIngresso && (
             <div
