@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EventArea } from "../../components/EventArea"; // Ajuste o caminho
 import { api } from "../../services/api"; // Ajuste o caminho
 
@@ -27,10 +27,10 @@ export function Home() {
         <div className="flex flex-col items-center bg-slate-50 min-h-screen py-12">
             <div className="text-center mb-10 px-4">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-[#0c1b35] mb-2 tracking-tight">
-                    Compre ingressos exclusivos na <span className="text-sky-500">KOYM</span>
+                    Compre ingressos exclusivos na <span className="text-sky-500">KOYN</span>
                 </h1>
                 <p className="text-slate-500 font-medium">
-                    Os melhores eventos do mundo não, do BRASIL!!!.
+                    Ingressos NFT autênticos, seguros e sem cambismo.
                 </p>
             </div>
             

@@ -10,7 +10,6 @@ export function RegisterClient() {
         telefone: '',
         email: '',
         senha: '',
-        acessoEthereum: '',
         cep: '',
         rua: '',
         numero: '',
@@ -22,7 +21,7 @@ export function RegisterClient() {
     const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prevState => ({
             ...prevState,
@@ -42,10 +41,9 @@ export function RegisterClient() {
             email: formData.email,
             senha: formData.senha,
             telefone: formData.telefone,
-            acesso_ethereum: formData.acessoEthereum, // Mapeando para snake_case
             endereco: {
                 rua: formData.rua,
-                numero: Number(formData.numero), // Convertendo para número conforme seu exemplo
+                numero: formData.numero ? Number(formData.numero) : null,
                 cidade: formData.cidade,
                 estado: formData.estado,
                 cep: formData.cep
@@ -53,18 +51,16 @@ export function RegisterClient() {
         };
 
         try {
-            const response = await api.post('/auth/register-cliente', payload);
-            console.log('Cliente criado com sucesso:', response.data);
-            alert('Conta criada com sucesso!');
-            navigate('/login')
+            await api.post('/auth/register-cliente', payload);
+            navigate('/login', { state: { mensagem: 'Conta criada com sucesso! Faça login para continuar.' } });
 
         } catch (error: any) {
             console.error('Erro na integração:', error);
-            if (error.response && error.response.data && error.response.data.message) {
-                setErrorMessage(error.response.data.message);
-            } else {
-                setErrorMessage('Erro ao criar conta. Verifique a estrutura dos dados.');
-            }
+            const msg = error.response?.data?.erro
+                || error.response?.data?.message
+                || error.response?.data?.mensagem
+                || 'Erro ao criar conta. Tente novamente.';
+            setErrorMessage(msg);
         } finally {
             setIsLoading(false);
         }
@@ -156,25 +152,16 @@ export function RegisterClient() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-300">Acesso Ethereum</label>
-                            <input
-                                type="text"
-                                name="acessoEthereum"
-                                value={formData.acessoEthereum}
-                                onChange={handleChange}
-                                required
-                                className="w-full bg-[#16274a] border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-sky-500 outline-none"
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-300">CEP</label>
+                            <label className="text-sm font-medium text-slate-300">CEP (só números)</label>
                             <input
                                 type="text"
                                 name="cep"
                                 value={formData.cep}
                                 onChange={handleChange}
                                 required
+                                maxLength={8}
+                                placeholder="12345678"
+                                inputMode="numeric"
                                 className="w-full bg-[#16274a] border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-sky-500 outline-none"
                             />
                         </div>
@@ -195,7 +182,7 @@ export function RegisterClient() {
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-slate-300">Número</label>
                                 <input
-                                    type="text"
+                                    type="number"
                                     name="numero"
                                     value={formData.numero}
                                     onChange={handleChange}
@@ -204,15 +191,19 @@ export function RegisterClient() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-300">Estado</label>
-                                <input
-                                    type="text"
+                                <label className="text-sm font-medium text-slate-300">Estado (UF)</label>
+                                <select
                                     name="estado"
                                     value={formData.estado}
                                     onChange={handleChange}
                                     required
                                     className="w-full bg-[#16274a] border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-sky-500 outline-none"
-                                />
+                                >
+                                    <option value="">Selecione</option>
+                                    {['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(uf => (
+                                        <option key={uf} value={uf}>{uf}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 

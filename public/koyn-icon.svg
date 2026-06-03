@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#0c1b35"/>
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, sans-serif" font-weight="900" font-size="28"
+        fill="white">Ko</text>
+  <text x="78%" y="54%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, sans-serif" font-weight="900" font-size="28"
+        fill="#38bdf8">yn</text>
+</svg>

@@ -15,10 +15,10 @@ export function EventArea({ events }: EventAreaProps) {
     }
 
     return (
-        <div className="w-full max-w-300 px-6 my-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 place-items-center">
+        <div className="w-full max-w-7xl px-6 my-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {events.map((evento) => (
-                    <Link key={evento.id} to={`/detalhes/${evento.id}`}>
+                    <Link key={evento.id} to={`/detalhes/${evento.id}`} className="w-full">
                         <EventCard event={evento} />
                     </Link>
                 ))}

@@ -10,8 +10,7 @@ export function RegisterOrganization() {
         emailAdmin: '',
         senhaAdmin: '',
         nomeOrg: '',
-        cnpjOrg: '',
-        acessoEthereumOrg: ''
+        cnpjOrg: ''
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -42,26 +41,21 @@ export function RegisterOrganization() {
             organizacao: {
                 nome: formData.nomeOrg,
                 cnpj: formData.cnpjOrg,
-                acesso_ethereum: formData.acessoEthereumOrg
+                carteira_ethereum: ''
             }
         };
 
         try {
-            // Chamada para a rota do Flask
-            const response = await api.post('/auth/register-organizacao', payload);
-
-            console.log('Organização registrada com sucesso:', response.data);
-            alert('Conta de organização criada com sucesso!');
-            navigate('/login')
+            await api.post('/auth/register-organizacao', payload);
+            navigate('/login', { state: { mensagem: 'Conta de organização criada com sucesso! Faça login para continuar.' } });
 
         } catch (error: any) {
             console.error('Erro ao integrar com a API Flask:', error);
-
-            if (error.response && error.response.data && error.response.data.message) {
-                setErrorMessage(error.response.data.message);
-            } else {
-                setErrorMessage('Erro ao criar conta. Verifique os dados e tente novamente.');
-            }
+            const msg = error.response?.data?.erro
+                || error.response?.data?.message
+                || error.response?.data?.mensagem
+                || 'Erro ao criar conta. Verifique os dados e tente novamente.';
+            setErrorMessage(msg);
         } finally {
             setIsLoading(false);
         }
@@ -117,18 +111,6 @@ export function RegisterOrganization() {
                                         onChange={handleChange}
                                         required
                                         placeholder="00.000.000/0001-00"
-                                        className="w-full bg-[#16274a] border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-sky-500 outline-none"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-slate-300">Acesso Ethereum (Carteira)</label>
-                                    <input
-                                        type="text"
-                                        name="acessoEthereumOrg"
-                                        value={formData.acessoEthereumOrg}
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="0x..."
                                         className="w-full bg-[#16274a] border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-sky-500 outline-none"
                                     />
                                 </div>
